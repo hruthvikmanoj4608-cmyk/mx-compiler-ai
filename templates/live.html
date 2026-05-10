@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>MX CompileX AI</title>
+
+    <!-- ================================================= -->
+    <!-- CODEMIRROR -->
+    <!-- ================================================= -->
+
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+
+    <!-- ================================================= -->
+    <!-- SOCKET IO -->
+    <!-- ================================================= -->
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- ================================================= -->
+    <!-- FONT -->
+    <!-- ================================================= -->
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+
+    <!-- ================================================= -->
+    <!-- STYLE -->
+    <!-- ================================================= -->
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+
+            height:100vh;
+
+            overflow:hidden;
+
+            background:#0b1120;
+
+            color:white;
+
+            font-family:'JetBrains Mono', monospace;
+        }
+
+        .topbar{
+
+            height:70px;
+
+            display:flex;
+
+            justify-content:space-between;
+
+            align-items:center;
+
+            padding:0 20px;
+
+            background:#111827;
+
+            border-bottom:1px solid #1f2937;
+        }
+
+        .brand{
+
+            display:flex;
+
+            flex-direction:column;
+        }
+
+        .logo{
+
+            font-size:28px;
+
+            font-weight:bold;
+
+            color:#38bdf8;
+        }
+
+        .status{
+
+            font-size:13px;
+
+            margin-top:4px;
+
+            color:#4ade80;
+        }
+
+        .controls{
+
+            display:flex;
+
+            gap:10px;
+
+            flex-wrap:wrap;
+        }
+
+        .btn{
+
+            border:none;
+
+            padding:12px 18px;
+
+            border-radius:10px;
+
+            color:white;
+
+            cursor:pointer;
+
+            font-weight:bold;
+
+            transition:0.2s;
+
+            font-family:'JetBrains Mono', monospace;
+        }
+
+        .btn:hover{
+
+            transform:scale(1.04);
+        }
+
+        .btn:disabled{
+
+            opacity:0.5;
+
+            cursor:not-allowed;
+
+            transform:none;
+        }
+
+        .run-btn{
+            background:#16a34a;
+        }
+
+        .stop-btn{
+            background:#dc2626;
+        }
+
+        .save-btn{
+            background:#2563eb;
+        }
+
+        .clear-btn{
+            background:#4b5563;
+        }
+
+        .workspace{
+
+            display:flex;
+
+            height:calc(100vh - 70px);
+        }
+
+        .editor-container{
+
+            width:60%;
+
+            display:flex;
+
+            flex-direction:column;
+
+            border-right:1px solid #1f2937;
+        }
+
+        .terminal-container{
+
+            width:40%;
+
+            display:flex;
+
+            flex-direction:column;
+
+            background:#000;
+        }
+
+        .panel-title{
+
+            padding:12px;
+
+            background:#111827;
+
+            border-bottom:1px solid #1f2937;
+
+            color:#9ca3af;
+
+            font-size:14px;
+        }
+
+        .CodeMirror{
+
+            height:100% !important;
+
+            font-size:16px;
+        }
+
+        .terminal{
+
+            flex:1;
+
+            overflow-y:auto;
+
+            padding:15px;
+
+            background:black;
+
+            color:#00ff66;
+
+            white-space:pre-wrap;
+
+            word-wrap:break-word;
+
+            font-size:15px;
+
+            line-height:1.5;
+        }
+
+        .terminal::-webkit-scrollbar,
+        #ai-errors::-webkit-scrollbar{
+
+            width:8px;
+        }
+
+        .terminal::-webkit-scrollbar-thumb,
+        #ai-errors::-webkit-scrollbar-thumb{
+
+            background:#374151;
+
+            border-radius:10px;
+        }
+
+        #ai-errors{
+
+            max-height:280px;
+
+            overflow-y:auto;
+
+            background:#0f172a;
+
+            border-top:1px solid #1f2937;
+
+            padding:10px;
+        }
+
+        .ai-card{
+
+            background:#111827;
+
+            border:1px solid #374151;
+
+            border-left:5px solid #ef4444;
+
+            border-radius:10px;
+
+            padding:12px;
+
+            margin-bottom:12px;
+        }
+
+        .ai-title{
+
+            color:#f87171;
+
+            font-weight:bold;
+
+            margin-bottom:8px;
+        }
+
+        .ai-reason{
+
+            color:#facc15;
+
+            margin-top:8px;
+
+            margin-bottom:8px;
+
+            line-height:1.5;
+        }
+
+        .ai-code{
+
+            background:black;
+
+            color:#00ff66;
+
+            padding:10px;
+
+            border-radius:8px;
+
+            overflow-x:auto;
+
+            white-space:pre-wrap;
+
+            margin-top:6px;
+
+            font-size:14px;
+        }
+
+        .input-area{
+
+            display:flex;
+
+            padding:10px;
+
+            background:#111827;
+
+            border-top:1px solid #1f2937;
+        }
+
+        #user-input{
+
+            flex:1;
+
+            padding:12px;
+
+            border:none;
+
+            outline:none;
+
+            background:#1f2937;
+
+            color:white;
+
+            border-radius:8px;
+
+            font-family:'JetBrains Mono', monospace;
+
+            font-size:14px;
+        }
+
+        .send-btn{
+
+            margin-left:10px;
+
+            padding:12px 18px;
+
+            border:none;
+
+            border-radius:8px;
+
+            background:#16a34a;
+
+            color:white;
+
+            cursor:pointer;
+
+            font-weight:bold;
+
+            font-family:'JetBrains Mono', monospace;
+        }
+
+        #loading-overlay{
+
+            position:fixed;
+
+            inset:0;
+
+            background:rgba(0,0,0,0.75);
+
+            display:none;
+
+            justify-content:center;
+
+            align-items:center;
+
+            z-index:99999;
+        }
+
+        .loader-box{
+
+            background:#111827;
+
+            padding:30px;
+
+            border-radius:20px;
+
+            text-align:center;
+
+            border:1px solid #374151;
+        }
+
+        .spinner{
+
+            width:60px;
+
+            height:60px;
+
+            border:6px solid #1f2937;
+
+            border-top:6px solid #38bdf8;
+
+            border-radius:50%;
+
+            animation:spin 1s linear infinite;
+
+            margin:auto;
+
+            margin-bottom:20px;
+        }
+
+        @keyframes spin{
+
+            100%{
+                transform:rotate(360deg);
+            }
+        }
+
+        .loading-text{
+
+            color:white;
+
+            font-size:18px;
+
+            font-weight:bold;
+        }
+
+        @media(max-width:900px){
+
+            .workspace{
+
+                flex-direction:column;
+            }
+
+            .editor-container{
+
+                width:100%;
+
+                height:55%;
+            }
+
+            .terminal-container{
+
+                width:100%;
+
+                height:45%;
+            }
+
+            .topbar{
+
+                padding:0 12px;
+            }
+
+            .logo{
+
+                font-size:22px;
+            }
+
+            .btn{
+
+                padding:10px 12px;
+
+                font-size:12px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- ================================================= -->
+    <!-- LOADING -->
+    <!-- ================================================= -->
+
+    <div id="loading-overlay">
+
+        <div class="loader-box">
+
+            <div class="spinner"></div>
+
+            <div class="loading-text">
+                🤖 AI Fixing Your Code...
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- TOPBAR -->
+    <!-- ================================================= -->
+
+    <div class="topbar">
+
+        <div class="brand">
+
+            <div class="logo">
+                MX COMPILEX AI
+            </div>
+
+            <div class="status"
+            id="status">
+                ● Ready
+            </div>
+
+        </div>
+
+        <div class="controls">
+
+            <button class="btn run-btn"
+            id="run-btn"
+            onclick="runCode()">
+                RUN ▶
+            </button>
+
+            <button class="btn stop-btn"
+            onclick="stopCode()">
+                STOP ■
+            </button>
+
+            <button class="btn save-btn"
+            onclick="saveCode()">
+                SAVE 💾
+            </button>
+
+            <button class="btn save-btn"
+            onclick="applyAiFix()">
+                APPLY AI FIX ⚡
+            </button>
+
+            <button class="btn clear-btn"
+            onclick="clearTerminal()">
+                CLEAR 🗑
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- WORKSPACE -->
+    <!-- ================================================= -->
+
+    <div class="workspace">
+
+        <!-- ================================================= -->
+        <!-- EDITOR -->
+        <!-- ================================================= -->
+
+        <div class="editor-container">
+
+            <div class="panel-title">
+                main.c
+            </div>
+
+            <textarea id="editor">
+
+#include <stdio.h>
+
+int main() {
+
+    char name[100];
+
+    printf("Enter your name: ");
+
+    scanf("%99s", name);
+
+    printf("Hello %s\n", name);
+
+    return 0;
+}
+
+            </textarea>
+
+        </div>
+
+        <!-- ================================================= -->
+        <!-- TERMINAL -->
+        <!-- ================================================= -->
+
+        <div class="terminal-container">
+
+            <div class="panel-title">
+                LIVE TERMINAL
+            </div>
+
+            <div class="terminal"
+            id="terminal"></div>
+
+            <div id="ai-errors"></div>
+
+            <div class="input-area">
+
+                <input
+                type="text"
+                id="user-input"
+                placeholder="Enter input here..."
+                autocomplete="off">
+
+                <button class="send-btn"
+                onclick="sendInput()">
+                    SEND
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- SCRIPT -->
+    <!-- ================================================= -->
+
+    <script>
+
+        const socket = io({
+
+            reconnection:true,
+            reconnectionAttempts:Infinity,
+            reconnectionDelay:1000,
+            timeout:20000
+
+        });
+
+        const terminal =
+        document.getElementById("terminal");
+
+        const inputBox =
+        document.getElementById("user-input");
+
+        const statusText =
+        document.getElementById("status");
+
+        const runBtn =
+        document.getElementById("run-btn");
+
+        const aiErrors =
+        document.getElementById("ai-errors");
+
+        const loadingOverlay =
+        document.getElementById("loading-overlay");
+
+        let isRunning = false;
+
+        let isConnected = false;
+
+        window.latestAiCode = "";
+
+        const editor = CodeMirror.fromTextArea(
+
+            document.getElementById("editor"),
+
+            {
+                mode:"text/x-csrc",
+                theme:"dracula",
+                lineNumbers:true,
+                autoCloseBrackets:true,
+                indentUnit:4,
+                tabSize:4,
+                lineWrapping:true
+            }
+        );
+
+        editor.setSize("100%", "100%");
+
+        const savedCode =
+        localStorage.getItem("mx_saved_code");
+
+        if(savedCode){
+
+            editor.setValue(savedCode);
+        }
+
+        function updateStatus(text, color){
+
+            statusText.innerHTML = text;
+
+            statusText.style.color = color;
+        }
+
+        function resetRunState(){
+
+            isRunning = false;
+
+            runBtn.disabled = false;
+        }
+
+        function showLoader(){
+
+            loadingOverlay.style.display = "flex";
+        }
+
+        function hideLoader(){
+
+            loadingOverlay.style.display = "none";
+        }
+
+        function applyAiFix(){
+
+            if(!window.latestAiCode)
+                return;
+
+            editor.setValue(
+                window.latestAiCode
+            );
+
+            updateStatus(
+                "● AI Fix Applied",
+                "#38bdf8"
+            );
+        }
+
+        let terminalBuffer = "";
+
+        let terminalFlushScheduled = false;
+
+        function appendTerminal(text){
+
+            terminalBuffer += text;
+
+            if(!terminalFlushScheduled){
+
+                terminalFlushScheduled = true;
+
+                requestAnimationFrame(()=>{
+
+                    terminal.textContent += terminalBuffer;
+
+                    terminalBuffer = "";
+
+                    terminal.scrollTop =
+                    terminal.scrollHeight;
+
+                    terminalFlushScheduled = false;
+                });
+            }
+        }
+
+        function detectInputPrompt(text){
+
+            const prompts = [
+                "enter",
+                "input",
+                ":",
+                "value",
+                "name",
+                "number"
+            ];
+
+            const lower =
+            text.toLowerCase();
+
+            return prompts.some(
+                p => lower.includes(p)
+            );
+        }
+
+        socket.on("connect", ()=>{
+
+            isConnected = true;
+
+            updateStatus(
+                "● Connected",
+                "#4ade80"
+            );
+        });
+
+        socket.on("disconnect", ()=>{
+
+            isConnected = false;
+
+            resetRunState();
+
+            hideLoader();
+
+            updateStatus(
+                "● Disconnected",
+                "#ef4444"
+            );
+        });
+
+        socket.io.on("reconnect", ()=>{
+
+            updateStatus(
+                "● Reconnected",
+                "#4ade80"
+            );
+        });
+
+        socket.on("output", function(data){
+
+            try{
+
+                if(!data || !data.data)
+                    return;
+
+                appendTerminal(data.data);
+
+                if(
+                    detectInputPrompt(data.data)
+                ){
+
+                    inputBox.focus();
+                }
+
+                if(
+                    data.data.includes(
+                        "AI Analyzing"
+                    )
+                ){
+
+                    showLoader();
+                }
+
+                if(
+
+                    data.data.includes("Finished") ||
+                    data.data.includes("Stopped") ||
+                    data.data.includes("Exceeded") ||
+                    data.data.includes("Error")
+
+                ){
+
+                    hideLoader();
+
+                    resetRunState();
+
+                    updateStatus(
+                        "● Idle",
+                        "#4ade80"
+                    );
+                }
+
+            }catch(error){
+
+                console.error(error);
+            }
+        });
+
+        socket.on("ai_error", function(data){
+
+            try{
+
+                hideLoader();
+
+                aiErrors.innerHTML = "";
+
+                window.latestAiCode =
+                data.corrected_code || "";
+
+                if(
+                    !data ||
+                    !data.errors ||
+                    !Array.isArray(data.errors)
+                ){
+                    return;
+                }
+
+                resetRunState();
+
+                updateStatus(
+                    "● AI Analysis Complete",
+                    "#38bdf8"
+                );
+
+                data.errors.forEach(error => {
+
+                    const card =
+                    document.createElement("div");
+
+                    card.className =
+                    "ai-card";
+
+                    card.innerHTML = `
+
+                        <div class="ai-title">
+                            ❌ Line ${String(error.line || 0)}
+                        </div>
+
+                        <div>
+                            <strong>Wrong Line:</strong>
+                        </div>
+
+                        <div class="ai-code">
+${error.wrong || ""}
+                        </div>
+
+                        <div class="ai-reason">
+📘 ${error.reason || ""}
+                        </div>
+
+                        <div>
+                            <strong>Correct Line:</strong>
+                        </div>
+
+                        <div class="ai-code">
+${error.correct || ""}
+                        </div>
+                    `;
+
+                    aiErrors.appendChild(card);
+                });
+
+            }catch(error){
+
+                console.error(error);
+            }
+        });
+
+        function runCode(){
+
+            try{
+
+                if(isRunning)
+                    return;
+
+                if(!isConnected){
+
+                    alert(
+                        "Socket not connected"
+                    );
+
+                    return;
+                }
+
+                const code =
+                editor.getValue();
+
+                if(code.trim()===""){
+
+                    alert(
+                        "Code editor is empty"
+                    );
+
+                    return;
+                }
+
+                isRunning = true;
+
+                runBtn.disabled = true;
+
+                terminal.textContent = "";
+
+                aiErrors.innerHTML = "";
+
+                updateStatus(
+                    "● Running",
+                    "#facc15"
+                );
+
+                socket.emit(
+
+                    "start_session",
+
+                    {
+                        code:code
+                    }
+                );
+
+                inputBox.focus();
+
+            }catch(error){
+
+                console.error(error);
+
+                resetRunState();
+            }
+        }
+
+        function stopCode(){
+
+            try{
+
+                socket.emit(
+                    "stop_program"
+                );
+
+                resetRunState();
+
+                hideLoader();
+
+                updateStatus(
+                    "● Stopped",
+                    "#ef4444"
+                );
+
+            }catch(error){
+
+                console.error(error);
+            }
+        }
+
+        function sendInput(){
+
+            try{
+
+                if(!isRunning)
+                    return;
+
+                const value =
+                inputBox.value;
+
+                if(value.trim()==="")
+                    return;
+
+                socket.emit(
+
+                    "terminal_input",
+
+                    {
+                        data:value
+                    }
+                );
+
+                appendTerminal(
+                    value + "\n"
+                );
+
+                inputBox.value = "";
+
+            }catch(error){
+
+                console.error(error);
+            }
+        }
+
+        function saveCode(){
+
+            try{
+
+                localStorage.setItem(
+
+                    "mx_saved_code",
+
+                    editor.getValue()
+                );
+
+                updateStatus(
+                    "● Code Saved",
+                    "#38bdf8"
+                );
+
+                setTimeout(()=>{
+
+                    if(!isRunning){
+
+                        updateStatus(
+                            "● Ready",
+                            "#4ade80"
+                        );
+                    }
+
+                },2000);
+
+            }catch(error){
+
+                console.error(error);
+            }
+        }
+
+        function clearTerminal(){
+
+            terminal.textContent = "";
+
+            aiErrors.innerHTML = "";
+        }
+
+        inputBox.addEventListener(
+
+            "keydown",
+
+            function(e){
+
+                if(e.key==="Enter"){
+
+                    e.preventDefault();
+
+                    sendInput();
+                }
+            }
+        );
+
+        document.addEventListener(
+
+            "keydown",
+
+            function(e){
+
+                if(
+                    e.ctrlKey &&
+                    e.key==="Enter"
+                ){
+
+                    e.preventDefault();
+
+                    runCode();
+                }
+
+                if(
+                    e.ctrlKey &&
+                    e.key.toLowerCase()==="s"
+                ){
+
+                    e.preventDefault();
+
+                    saveCode();
+                }
+
+                if(
+                    e.ctrlKey &&
+                    e.key.toLowerCase()==="l"
+                ){
+
+                    e.preventDefault();
+
+                    clearTerminal();
+                }
+            }
+        );
+
+        terminal.addEventListener(
+
+            "click",
+
+            ()=>{
+
+                inputBox.focus();
+            }
+        );
+
+        window.addEventListener(
+
+            "load",
+
+            ()=>{
+
+                editor.refresh();
+
+                inputBox.focus();
+            }
+        );
+
+        window.addEventListener(
+
+            "resize",
+
+            ()=>{
+
+                editor.refresh();
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>

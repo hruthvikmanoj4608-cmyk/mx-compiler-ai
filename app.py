@@ -1,4 +1,6 @@
-cfrom flask import Flask, render_template, request
+import eventlet
+eventlet.monkey_patch()
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 
@@ -6,7 +8,7 @@ from ai_router import ask_ai
 
 import subprocess
 import os
-import uuid
+import uuidss
 import time
 import signal
 import shutil

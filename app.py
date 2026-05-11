@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+cfrom flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 
@@ -34,7 +34,7 @@ app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="threading",
+    async_mode="eventlet",
     ping_timeout=60,
     ping_interval=25,
     max_http_buffer_size=10 * 1024 * 1024
